@@ -21,9 +21,8 @@ class XBox360WithNanoRobot(XBox360Controller):
     def on_right_stick_moved(self, value_x, value_y):
         self.board.pantilt.set_value(value_x, value_y)
 
-    def on_xbox(self, value):
+    def on_controller_disconnected(self):
         self.board.reset()
-        sys.exit(0)
 
     def on_left_stick_moved(self, value_x, value_y):
 
@@ -69,9 +68,10 @@ if __name__ == "__main__":
     controller = NanoBoard(port)
 
     log(INFO, "Robot INIT")
-    robot = XBox360WithNanoRobot(controller, 0)
+
+    def create_robot(gamepad):
+        return XBox360WithNanoRobot(controller, gamepad)
 
     log(INFO, "mainloop")
-    for event in process_sdl_events():
-        if robot.will_handle(event):
-            robot.handle(event)
+    for event in process_sdl_events(create_robot):
+        pass
