@@ -15,6 +15,10 @@ class XBox360Controller:
 
         self.sdl_joy = sdl2.SDL_GameControllerGetJoystick(self.sdl_controller)
         self.sdl_joy_id = sdl2.SDL_JoystickInstanceID(self.sdl_joy)
+        
+        guid = sdl2.SDL_JoystickGetDeviceGUID(self.sdl_joy_id)
+        logging.log(logging.INFO, "Joystick GUID: %s " % guid)
+        logging.log(logging.INFO, "Mapping: %s" % sdl2.SDL_GameControllerMappingForGUID(guid))
 
     def close(self):
         sdl2.SDL_GameControllerClose(self.sdl_controller)
@@ -25,13 +29,16 @@ class XBox360Controller:
 
     def will_handle(self, event):
         if event.type in [
-            sdl2.SDL_CONTROLLERBUTTONDOWN,
-            sdl2.SDL_CONTROLLERBUTTONUP]:
+        	sdl2.SDL_CONTROLLERBUTTONDOWN,
+                sdl2.SDL_CONTROLLERBUTTONUP,
+                ]:
 
             if event.cbutton.which == self.sdl_joy_id:
                 return True
 
-        if event.type == sdl2.SDL_CONTROLLERAXISMOTION:
+        if event.type in [
+        	sdl2.SDL_CONTROLLERAXISMOTION, 
+                ]:
             if event.caxis.which == self.sdl_joy_id:
                 return True
 
@@ -93,59 +100,67 @@ class XBox360Controller:
         pass
 
     BUTTON_TO_FUNCTION_MAP = {
-        gamecontroller.SDL_CONTROLLER_BUTTON_DPAD_UP: 'on_dpad_up',
-        gamecontroller.SDL_CONTROLLER_BUTTON_DPAD_DOWN: 'on_dpad_down',
-        gamecontroller.SDL_CONTROLLER_BUTTON_DPAD_LEFT: 'on_dpad_left',
-        gamecontroller.SDL_CONTROLLER_BUTTON_DPAD_RIGHT: 'on_dpad_right',
+        'dpup': 'on_dpad_up',
+        'dpdown': 'on_dpad_down',
+        'dpleft': 'on_dpad_left',
+        'dpright': 'on_dpad_right',
 
-        gamecontroller.SDL_CONTROLLER_BUTTON_START: 'on_start',
-        gamecontroller.SDL_CONTROLLER_BUTTON_BACK: 'on_back',
+        'start': 'on_start',
+        'back': 'on_back',
 
-        gamecontroller.SDL_CONTROLLER_BUTTON_RIGHTSTICK: 'on_right_stick',
-        gamecontroller.SDL_CONTROLLER_BUTTON_LEFTSTICK: 'on_left_stick',
-
-        gamecontroller.SDL_CONTROLLER_BUTTON_LEFTSHOULDER: 'on_lb',
-        gamecontroller.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: 'on_rb',
-
-        gamecontroller.SDL_CONTROLLER_BUTTON_A: 'on_a',
-        gamecontroller.SDL_CONTROLLER_BUTTON_B: 'on_b',
-        gamecontroller.SDL_CONTROLLER_BUTTON_X: 'on_x',
-        gamecontroller.SDL_CONTROLLER_BUTTON_Y: 'on_y',
         
-        gamecontroller.SDL_CONTROLLER_BUTTON_GUIDE: 'on_xbox'
+        'rightstick': 'on_right_stick',
+        'leftstick': 'on_left_stick',
+
+        'leftshoulder': 'on_lb',
+        'rightshoulder': 'on_rb',
+
+        'a': 'on_a',
+        'b': 'on_b',
+        'x': 'on_x',
+        'y': 'on_y',
+        
+        'guide': 'on_xbox'
 
         }
 
     AXIS_TO_FUNCTION_MAP = {
-        gamecontroller.SDL_CONTROLLER_AXIS_LEFTX: 'on_left_stick_moved',
-        gamecontroller.SDL_CONTROLLER_AXIS_LEFTY: 'on_left_stick_moved',
+        'leftx': 'on_left_stick_moved',
+        'lefty': 'on_left_stick_moved',
 
-        gamecontroller.SDL_CONTROLLER_AXIS_RIGHTX: 'on_right_stick_moved',
-        gamecontroller.SDL_CONTROLLER_AXIS_RIGHTY: 'on_right_stick_moved',
+        'rightx': 'on_right_stick_moved',
+        'righty': 'on_right_stick_moved',
 
-        gamecontroller.SDL_CONTROLLER_AXIS_TRIGGERLEFT: 'on_lt',
-        gamecontroller.SDL_CONTROLLER_AXIS_TRIGGERRIGHT: 'on_rt'
+        'lefttrigger': 'on_lt',
+        'righttrigger': 'on_rt'
 
     }
 
     def handle(self, event):
+        
         if event.type in [
-            sdl2.SDL_CONTROLLERBUTTONDOWN ,
-            sdl2.SDL_CONTROLLERBUTTONUP]:
-            function = getattr(self, self.BUTTON_TO_FUNCTION_MAP[event.cbutton.button])
-            if DEBUG: print "CALLING", function, event.cbutton.state
-            return function(event.cbutton.state)
+        	sdl2.SDL_CONTROLLERBUTTONDOWN ,
+            	sdl2.SDL_CONTROLLERBUTTONUP]:
+                    
+            button = event.cbutton.button
+            state = event.cbutton.state
+            
+            buttonName = sdl2.SDL_GameControllerGetStringForButton(button)
+            function = getattr(self, self.BUTTON_TO_FUNCTION_MAP[buttonName])
+            if DEBUG: print "CALLING", function, state
+            return function(state)
 
-        else:
+        elif event.type in [sdl2.SDL_CONTROLLERAXISMOTION]:
 
             axis = event.caxis.axis
-            function = getattr(self, self.AXIS_TO_FUNCTION_MAP[axis])
+            axisName = sdl2.SDL_GameControllerGetStringForAxis(axis)
+            function = getattr(self, self.AXIS_TO_FUNCTION_MAP[axisName])
 
-            if axis in [0,1]:
-                axes = [0, 1]
+            if axisName in ['leftx', 'lefty']:
+                axes = ['leftx', 'lefty']
 
-            elif axis in [2, 3]:
-                axes = [2, 3]
+            elif axisName in ['rightx', 'righty']:
+                axes = ['rightx', 'righty']
 
             else:
                 # LT or RT
@@ -155,7 +170,8 @@ class XBox360Controller:
 
             args = []
             for axis in axes:
-                value = sdl2.SDL_JoystickGetAxis(self.sdl_joy, axis)
+                value = sdl2.SDL_GameControllerGetAxis(self.sdl_controller,
+                	sdl2.SDL_GameControllerGetAxisFromString(axis))
                 value = value / 32768.0
                 args.append(value)
 
@@ -168,6 +184,8 @@ def init_sdl():
     logging.log(logging.INFO, "sdl init...")
     import sdl2, sdl2.ext
     sdl2.SDL_Init(sdl2.SDL_INIT_GAMECONTROLLER)
+    sdl2.SDL_GameControllerAddMappingsFromRW(sdl2.SDL_RWFromFile("gamecontrollerdb.txt", "rb"), 1)
+
 
 def process_sdl_events(controller_class):
     import sdl2

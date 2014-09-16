@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     log(INFO, "SDL init")
     init_sdl()
-
+    
     log(INFO, "Controller INIT")
     port = '/dev/ttyUSB0'
     if sys.platform == 'win32':
