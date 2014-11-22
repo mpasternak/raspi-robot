@@ -1,3 +1,4 @@
+
 # -*- encoding: utf-8 -*-
 
 from pyfirmata import Arduino
@@ -77,16 +78,51 @@ class Engine:
         self.set_power(0)
 
 
-class NanoBoard:
-    def __init__(self, port):
+class Board:
+    def __init__(self, 
+                 port, 
+
+                 left_engine_pwm_pin=3, 
+                 left_engine_forward_pin=4, 
+                 left_engine_backward_pin=5,
+
+                 right_engine_pwm_pin=9,
+                 right_engine_forward_pin=7,
+                 right_engine_backward_pin=8,
+
+                 servo_x_pin=10,
+                 servo_x_neutral_angle=70,
+
+                 servo_y_pin=11,
+                 servo_y_neutral_angle=150):
+
         board = Arduino(port)
+
         self.board = board
 
-        self.left_engine = Engine(board, pwm_pin_no=3, forward_pin_no=7, backward_pin_no=8)
-        self.right_engine = Engine(board, pwm_pin_no=5, forward_pin_no=11, backward_pin_no=12)
+        self.left_engine = Engine(
+            board, 
+            pwm_pin_no=left_engine_pwm_pin, 
+            forward_pin_no=left_engine_forward_pin, 
+            backward_pin_no=left_engine_backward_pin)
 
-        servo_x = Servo(board, servo_pin_no=9, neutral_angle=70)
-        servo_y = Servo(board, servo_pin_no=10, neutral_angle=150, max_angle=170)
+        self.right_engine = Engine(
+            board, 
+            pwm_pin_no=right_engine_pwm_pin, 
+            forward_pin_no=right_engine_forward_pin, 
+            backward_pin_no=right_engine_backward_pin)
+
+        servo_x = Servo(
+            board, 
+            servo_pin_no=servo_x_pin, 
+            neutral_angle=servo_x_neutral_angle)
+
+        servo_y = Servo(
+            board, 
+            servo_pin_no=servo_y_pin, 
+            neutral_angle=servo_y_neutral_angle, 
+            max_angle=170)
+
         self.pantilt = PanTilt(servo_x, servo_y)
 
     def set_camera_servo_x(self, value):
@@ -102,16 +138,22 @@ class NanoBoard:
 
 
 if __name__ == "__main__":
-    import time
+    import time, sys
 
-    controller = NanoBoard(3)
+    port = 3
+    if sys.platform == 'linux2':
+        port = '/dev/ttyAMA0'
+        
+    print "Create board"
+    controller = Board(port)
+    print "Done!"
 
     print "reset"
     controller.reset()
 
-    for engine in ['left', 'right']:
+    for engine in ['right', 'left']:
         for direction in ['backward', 'forward']:
-            for value in [0.3, 0.6, 1.0]:
+            for value in [0.4, 0.6, 1.0]:
                 eng = getattr(controller, "%s_engine" % engine)
                 df = getattr(eng, direction)
 

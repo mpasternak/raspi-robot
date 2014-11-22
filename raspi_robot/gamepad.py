@@ -7,7 +7,7 @@ from sdl2 import gamecontroller
 DEBUG = False
 
 
-class XBox360Controller:
+class GamepadController:
 
     def __init__(self, sdl_controller_id):
         self.sdl_controller_id = sdl_controller_id
@@ -238,5 +238,5 @@ if __name__ == "__main__":
     global DEBUG
     DEBUG = True
 
-    for event in process_sdl_events(controller_class=XBox360Controller):
+    for event in process_sdl_events(controller_class=GamepadController):
         pass
